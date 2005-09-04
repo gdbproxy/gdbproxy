@@ -1,0 +1,202 @@
+This is gdbproxy.info, produced by makeinfo version 4.3 from
+gdbproxy.texi.
+
+START-INFO-DIR-ENTRY
+* Remote Proxy: (gdbproxy).       Proxy server using the remote GDB protocol.
+END-INFO-DIR-ENTRY
+
+   Copyright (C) 1999 Quality Quorum, Inc.  Copyright (C) 2002 Chris
+Liechti and Steve Underwood
+
+   Permission is granted to make and distribute verbatim copies of this
+manual provided the copyright notice and this permission notice are
+preserved on all copies.
+
+   Permission is granted to copy and distribute modified versions of
+this manual under the conditions for verbatim copying, provided also
+that the entire resulting derived work is distributed under the terms
+of a permission notice identical to this one.
+
+   Permission is granted to copy and distribute translations of this
+manual into another language, under the above conditions for modified
+versions.
+
+
+File: gdbproxy.info,  Node: Top,  Next: Introduction,  Up: (dir)
+
+Top
+***
+
+   This brief manual contains preliminary documentation for the GDB
+Remote Proxy Server or gdbproxy (collectively version 0.7.1):
+
+* Menu:
+
+* Introduction::                           General introduction into gdbproxy
+                                           functionality.
+* Invoking gdbproxy::                      Command options supported by
+                                           gdbproxy.
+* Targets `remote' and `extended-remote':: Description of `remote' and
+                                           `extended-remote' targets.
+* Target `skeleton'::			   Description of the `skeleton' target.
+* Index::                                  Index.
+
+
+File: gdbproxy.info,  Node: Introduction,  Next: Invoking gdbproxy,  Prev: Top,  Up: Top
+
+Introduction
+************
+
+   The  `gdbproxy' program is a gdbvsever-like application for embedded
+environment. The main purpose of `gdbproxy' is it allow truly remote
+debugging working as an integral part of the set of utilities called
+Labslave. It is supposed to be run on the computer located near a system
+being debugged. It communicates with debugger over net using standard
+GDP remote protocol. It incorporates a number of targets which allow it
+to hook up a system being debugged.
+
+   There are number of established ways to do remote debugging, let us
+compare the `gdbproxy' with a terminal server and with telnetting into
+the lab machine.
+
+   Comparing to a terminal server `gdbproxy' has the following
+advantages: (1)terminal server supports only one target, (2)lab machine
+could be used for a wide variety of tasks, for example it can provide
+bootp, nfs and syslog services for a device under debugging, (3) other
+components of a lab slave could be run on the same lab machine.
+
+   Comparing to a telnetting into lab machine the `gdbproxy' has the
+following advantages: (1) it does not require lab machine to mount
+source directories (it reduces administrative needs of a lab machine
+and its bandwidth rquirements), (2) its bandwidth requitrements are
+low, debugger is more responsive and its traffic could be easily
+encrypted, so remote device could be truly debugged across the open
+(and slow) Internet.
+
+   Also the `gdbproxy' has the unique advantage of merging cross
+platform problems. For example if one has GNU developement environment
+running on SUN and particular ICE (e.g. wiggler) is accessible only
+from WinNT. Then one could use WinNT port of the Labslave on the lab
+machine and effectively use remote debugger on SUNs.
+
+   The `gdbproxy' does not require to be configured and it is able to
+support wide variety of processors and debugging instruments in the
+same image.
+
+
+File: gdbproxy.info,  Node: Invoking gdbproxy,  Next: Targets `remote' and `extended-remote',  Prev: Introduction,  Up: Top
+
+Invoking gdbproxy
+*****************
+
+     gdbproxy [--copying] [--daemon] [--debug] [--help] [--port=PORT] [--version]
+     [--warranty] [TARGET [TARGET-OPTIONS] [TARGET-ARGUMENTS]]
+
+   The `gdbproxy' listens of remote GDB protocol commands on the socket
+port, translate requests into approriate commands for the target,
+translated target responses to the GBP protocol commands and send them
+back to the debugger.
+
+`--copying'
+     Print information about distributing the `gdbproxy' and exit.
+
+`--daemon'
+     Start `gdbproxy' as a daemon.
+
+`--debug'
+     Run the `gdbproxy' in debug mode.
+
+`--help'
+     Print help message and list of supported targets and exit.
+
+`--port=PORT'
+     The `gdbproxy' will listen on specified port, otherwise it will use
+     available port. In all cases the `gdbproxy' will print port being
+     used on standard output
+
+`--version'
+     Print current version and exit.
+
+`--warranty'
+     Print NO WARRANTY details and exit.
+
+`TARGET'
+     Target name. It is required unless either -help, -version,
+     -warranty, -copying are specified. `gdbproxy --help' TARGET-X
+     prints help for TARGET-X.
+
+`TARGET-OPTIONS'
+     Options for target.
+
+`TARGET-ARGUMENTS'
+     Non-option arguments for target.
+
+
+File: gdbproxy.info,  Node: Targets `remote' and `extended-remote',  Next: Target `skeleton',  Prev: Invoking gdbproxy,  Up: Top
+
+Targets `remote' and `extended-remote'
+**************************************
+
+     gdbproxy [PROXY-OPTIONS] remote [--debug] [--use-break]
+      [--baud=BAUD] [--timeout=TIMEOUT] DEVICE
+     or
+     gdbproxy [PROXY-OPTIONS] extended-remote [--debug] [--use-break]
+      [--baud=BAUD] [--timeout=TIMEOUT] DEVICE
+
+   The target `remote' is using remote GDB protocol over serial line to
+connect with device being debugged. Target `extended-remote' is using
+extended version of the GDB protocol. Please, note if your stub does not
+support remote operations, `extended-remote' is not able to detect this
+due to protocol deficiency. So, `extended-remote' should be used only
+with stubs which support remote operations.
+
+`--debug'
+     Run remote target in debug mode.
+
+`--use-break'
+     Send BREAK to stop device being debugged, default is to send
+     Ctrl-C.
+
+`--baud=BAUD'
+     Set baud rate, default is 38400.
+
+`--timeout=TIMEOUT'
+     Set timeout, default is 2 seconds, minimal value is 1 second,
+     maximum value is 3600 seconds.
+
+`DEVICE'
+     Device to be used, currently only local serial connections are
+     supported.
+
+
+File: gdbproxy.info,  Node: Target `skeleton',  Next: Index,  Prev: Targets `remote' and `extended-remote',  Up: Top
+
+Target `skeleton'
+*****************
+
+     gdbproxy [PROXY-OPTIONS] skeleton [--debug] DRIVER
+
+
+File: gdbproxy.info,  Node: Index,  Prev: Target `skeleton',  Up: Top
+
+Index
+*****
+
+* Menu:
+
+* gdbproxy:                              Introduction.
+* labslave:                              Introduction.
+* target:                                Introduction.
+* version:                               Top.
+
+
+
+Tag Table:
+Node: Top865
+Node: Introduction1600
+Node: Invoking gdbproxy3588
+Node: Targets `remote' and `extended-remote'4947
+Node: Target `skeleton'6208
+Node: Index6422
+
+End Tag Table
