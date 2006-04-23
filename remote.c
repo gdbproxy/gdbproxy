@@ -89,7 +89,7 @@
  */
 static void  remote_help(const char *prog_name);
 static void  extended_remote_help(const char *prog_name);
-static int   remote_open(int agrc,
+static int   remote_open(int argc,
                          char * const argv[],
                          const char *prog_name,
                          log_func log_fn);

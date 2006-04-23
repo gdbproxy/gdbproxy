@@ -5652,7 +5652,7 @@ fi
 
 if test "$host_os" = "cygwin" ; then
     CFLAGS="$CFLAGS -mno-cygwin"
-    LIBS="$LIBS -lws2_32"
+    LIBS="$LIBS -lws2_32 -lsetupapi"
 fi
 
 echo "$as_me:$LINENO: checking for target_skeleton.c" >&5
