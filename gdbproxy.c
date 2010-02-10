@@ -1052,6 +1052,32 @@ static void handle_query_command(char * const in_buf,
         return;
     }
 
+    if (strncmp(in_buf + 1, "Supported", 9) == 0
+	&& (in_buf[10] == ':' || in_buf[10] == '\0'))
+    {
+      /* Features supported */
+      if (t->packetsize_query == NULL)
+	{
+	  rp_write_retval(RP_VAL_TARGETRET_NOSUPP, out_buf);
+	  return;
+	}
+
+      ret = t->packetsize_query(out_buf, out_buf_len);
+      switch (ret)
+	{
+	case RP_VAL_TARGETRET_OK:
+	  break;
+	case RP_VAL_TARGETRET_NOSUPP:
+	case RP_VAL_TARGETRET_ERR:
+	  rp_write_retval(ret, out_buf);
+	  break;
+	default:
+	  /* This should not happen */
+	  assert(0);
+	}
+      return;
+    }
+
     switch (in_buf[1])
     {
     case 'C':

@@ -2,6 +2,8 @@ Changes in gdbproxy 0.7.2:
 
 * Add support for qThreadExtraInfo, qfThreadInfo, and qsThreadInfo commands.
 
+* Add support for qSupported commands.
+
 Changes in gdbproxy 0.7.1:
 
 * Reworked a lot of the code. Added a skeleton target program, that should
