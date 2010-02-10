@@ -1,9 +1,6 @@
-#!/bin/sh
+#!/bin/sh -e
 # This script is used to generate
 # configuration files. It is relatively
 # hardcoded
 #
-aclocal
-autoconf
-autoheader
-automake
+exec autoreconf -f -i
