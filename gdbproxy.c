@@ -1250,6 +1250,7 @@ int main (int argc, char **argv)
     int more;
     int implemented;
     size_t in_len;
+    int quiet;
 
     /* Option descriptors */
     static struct option long_options[] =
@@ -1263,6 +1264,7 @@ int main (int argc, char **argv)
         {"warranty", 0, 0, 5},
         {"copying",  0, 0, 6},
         {"version",  0, 0, 7},
+        {"quiet",    0, 0, 8},
         {NULL,  0, 0, 0}
     };
 
@@ -1292,6 +1294,7 @@ int main (int argc, char **argv)
     rp_t_list = rp_init();
     dbg_sock_init();
     port = 0;
+    quiet = 0;
     doing_help   = FALSE;
     doing_daemon = FALSE;
     rp_debug_level = 0;
@@ -1345,6 +1348,10 @@ int main (int argc, char **argv)
             /* version */
             printf("Remote proxy for GDB, version %s\n\n", VERSION);
             return 0;
+        case 8:
+            /* quiet */
+            ++quiet;
+            break;
         default:
             printf("Use `%s --help' to see a complete list of options\n",
                    argv[0]);
@@ -1358,14 +1365,17 @@ int main (int argc, char **argv)
         exit(1);
     }
 
-    printf("\nRemote proxy for GDB, v%s, Copyright (C) 1999 Quality Quorum Inc.\n",
-           VERSION);
-    printf("MSP430 adaption Copyright (C) 2002 Chris Liechti and Steve Underwood\n");
-    printf("Blackfin adaption Copyright (C) 2008-2010 Analog Devices, Inc.\n\n");
-    printf("GDBproxy comes with ABSOLUTELY NO WARRANTY; for details\n");
-    printf("use `--warranty' option. This is Open Source software. You are\n");
-    printf("welcome to redistribute it under certain conditions. Use the\n");
-    printf("'--copying' option for details.\n\n");
+    if (!quiet)
+    {
+        printf("\nRemote proxy for GDB, v%s, Copyright (C) 1999 Quality Quorum Inc.\n",
+               VERSION);
+        printf("MSP430 adaption Copyright (C) 2002 Chris Liechti and Steve Underwood\n");
+        printf("Blackfin adaption Copyright (C) 2008-2010 Analog Devices, Inc.\n\n");
+        printf("GDBproxy comes with ABSOLUTELY NO WARRANTY; for details\n");
+        printf("use `--warranty' option. This is Open Source software. You are\n");
+        printf("welcome to redistribute it under certain conditions. Use the\n");
+        printf("'--copying' option for details.\n\n");
+    }
 
     /* Find the target */
     for (t = rp_t_list;  t;  t = t->next)
@@ -2865,6 +2875,7 @@ static void rp_usage(void)
     printf("Usage:\n");
     printf("  %s [options] [target [target-options] [target-args]]\n", name);
     printf("\nOptions:\n");
+    printf("  --quiet              do not print help on startup\n");
     printf("  --copying            print copying information\n");
 #ifndef WIN32
     printf("  --daemon             run %s as daemon\n", name);
