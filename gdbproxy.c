@@ -1,5 +1,6 @@
 /* Copyright (C) 1999-2001 Quality Quorum, Inc.
    Copyright (C) 2002 Chris Liechti and Steve Underwood
+                 2005 Martin Strubel (fixed pNN packet bug)
  
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions are met:
@@ -110,6 +111,9 @@ static int rp_decode_data(const char *in,
                           unsigned char *out,
                           size_t out_size,
                           size_t *len);
+
+static int rp_decode_reg(const char *in, unsigned int *reg_no);
+
 static int rp_decode_reg_assignment(const char *in,
                                     unsigned int *reg_no,
                                     unsigned char *out,
@@ -428,7 +432,12 @@ static void handle_read_single_register_command(char * const in_buf,
     unsigned char avail_buf[RP_PARAM_DATABYTES_MAX];
 
     /* Get a single register. Format 'pNN' */
-    reg_no = 0;
+    ret = rp_decode_reg(&in_buf[1], &reg_no);
+    if (!ret) {
+        rp_write_retval(RP_VAL_TARGETRET_ERR, out_buf);
+        return;
+    }
+
     ret = t->read_single_register(reg_no,
                                   data_buf,
                                   avail_buf,
@@ -446,6 +455,9 @@ static void handle_read_single_register_command(char * const in_buf,
         break;
     case RP_VAL_TARGETRET_ERR:
         rp_write_retval(RP_VAL_TARGETRET_ERR, out_buf);
+        break;
+    // handle targets non supporting single register read
+    case RP_VAL_TARGETRET_NOSUPP:
         break;
     default:
         /* This should not happen */
@@ -2231,6 +2243,14 @@ static int rp_decode_data(const char *in,
     }
 
     *len = count;
+
+    return  TRUE;
+}
+
+static int rp_decode_reg(const char *in, unsigned int *reg_no)
+{
+    if (!rp_decode_uint32(&in, reg_no, '\0'))
+        return  FALSE;
 
     return  TRUE;
 }
