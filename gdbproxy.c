@@ -2296,6 +2296,7 @@ static int rp_decode_mem(const char *in, uint64_t *addr, size_t *len)
     if (!rp_decode_uint64(&in, addr, ','))
         return  FALSE;
 
+    *len = 0;
     return  rp_decode_uint32(&in, len, '\0');
 }
 
