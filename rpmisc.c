@@ -140,8 +140,8 @@ void dbg_sock_cleanup(void)
 #endif
 }
 
-/* Open socket in a mode expected by gdb */
-int dbg_sock_open(unsigned int *port)
+/* Open listen socket in a mode expected by gdb */
+int dbg_listen_sock_open(unsigned int *port)
 {
     struct sockaddr_in sa;
     int tmp;
@@ -212,6 +212,18 @@ int dbg_sock_open(unsigned int *port)
         *port = p;
     }
 
+#if defined(WIN32)
+    assert(dbg_listen_sock != INVALID_SOCKET);
+
+    if ((ret = listen(dbg_listen_sock, 1)) == SOCKET_ERROR)
+        return  FALSE;
+#else
+    assert(dbg_listen_sock >= 0);
+
+    if ((ret = listen(dbg_listen_sock, 1)) != 0)
+        return  FALSE;
+#endif
+
     return  TRUE;
 }
 
@@ -227,9 +239,6 @@ int dbg_sock_accept(void)
     assert(dbg_sock == INVALID_SOCKET);
     assert(dbg_listen_sock != INVALID_SOCKET);
 
-    if ((ret = listen(dbg_listen_sock, 1)) == SOCKET_ERROR)
-        return  FALSE;
-
     tmp = sizeof(sa);
     if ((dbg_sock = accept(dbg_listen_sock, (struct sockaddr *) &sa, &tmp))
         == INVALID_SOCKET)
@@ -243,9 +252,6 @@ int dbg_sock_accept(void)
     assert(dbg_sock < 0);
     assert(dbg_listen_sock >= 0);
 
-    if ((ret = listen(dbg_listen_sock, 1)) != 0)
-        return  FALSE;
-
     tmp = sizeof(sa);
     if ((dbg_sock = accept(dbg_listen_sock, (struct sockaddr *) &sa, &tmp)) < 0)
         return  FALSE;
@@ -255,30 +261,11 @@ int dbg_sock_accept(void)
 #endif
 
     tmp = 1;
-    setsockopt(dbg_listen_sock,
-    	       SOL_SOCKET,
-	       SO_KEEPALIVE,
-               (char *) &tmp,
-	       sizeof(tmp));
-
-    tmp = 1;
     setsockopt(dbg_sock,
                pe->p_proto,
                TCP_NODELAY,
                (char *) &tmp,
                sizeof(tmp));
-
-#if defined(WIN32)
-    closesocket(dbg_listen_sock);
-    dbg_listen_sock = dbg_listen_sock;
-#else
-    close(dbg_listen_sock);
-    dbg_listen_sock = -1;
-
-    /* If we don't do this, then proxy simply
-       exits when the remote side dies. */
-    signal (SIGPIPE, SIG_IGN);
-#endif
 
     return  TRUE;
 }
@@ -292,23 +279,11 @@ void dbg_sock_close(void)
         closesocket(dbg_sock);
         dbg_sock = INVALID_SOCKET;
     }
-
-    if (dbg_listen_sock != INVALID_SOCKET)
-    {
-        closesocket(dbg_listen_sock);
-        dbg_listen_sock = INVALID_SOCKET;
-    }
 #else
     if (dbg_sock >= 0)
     {
         close(dbg_sock);
         dbg_sock = -1;
-    }
-
-    if (dbg_listen_sock >= 0)
-    {
-        close(dbg_listen_sock);
-        dbg_listen_sock = -1;
     }
 #endif
 }

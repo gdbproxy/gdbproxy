@@ -685,7 +685,6 @@ static int handle_kill_command(char * const in_buf,
 
     if (!extended_protocol)
     {
-        t->close();
         dbg_sock_close();
 
         if (!can_restart)
@@ -727,7 +726,6 @@ static int handle_kill_command(char * const in_buf,
                "%s: unable to restart target %s",
                name,
                t->name);
-        t->close();
         rp_write_retval(RP_VAL_TARGETRET_ERR, out_buf);
         rp_putpkt(out_buf);
         dbg_sock_close();
@@ -803,7 +801,6 @@ static int handle_restart_target_command(char * const in_buf,
    	       "%s: unable to restart target %s",
                name,
 	       t->name);
-        t->close();
         rp_write_retval(RP_VAL_TARGETRET_ERR, out_buf);
         rp_putpkt(out_buf);
         dbg_sock_close();
@@ -838,7 +835,6 @@ static void handle_detach_command(char * const in_buf,
     ret = t->disconnect();
 
     /* Note: The current GDB does not expect a reply */
-    t->close();
     rp_putpkt(out_buf);
     dbg_sock_close();
 
@@ -1304,29 +1300,6 @@ int main (int argc, char **argv)
     can_restart = FALSE;
     input_error = FALSE;
     status_string[0] = '\0';
-    for (;;)
-    {
-        if (input_error)
-        {
-            input_error = FALSE;
-            /* We come here when an input error is discovered */
-            rp_log(RP_VAL_LOGLEVEL_INFO,
-                   "%s: debugger has terminated connection",
-                   name);
-        
-            t->close();
-            dbg_sock_close();
-
-            /* Close connection and start again */
-            rp_log(RP_VAL_LOGLEVEL_INFO, "%s: will reopen the connection", name);
-            do_reinitialize = TRUE;
-        }
-
-        if (do_reinitialize)
-        {
-            do_reinitialize = FALSE;
-            /* Initialize target */
-            optind = sav_optind; /* Reset arg counting */
 
             //TODO: Looping like this is rather nasty, as we do not give
             //      meaningful responses if GDB connects. This needs improvement.
@@ -1358,38 +1331,62 @@ int main (int argc, char **argv)
                 assert(0);
                 exit(1);
             }
-        
-            extended_protocol = FALSE;
 
-            for (;;)
-            {
-                if (!(ret = dbg_sock_open(&port)))
+                if (!(ret = dbg_listen_sock_open(&port)))
                 {
                     rp_log(RP_VAL_LOGLEVEL_ERR,
-                           "%s: unable to open debugger connection. Will restart",
+                           "%s: unable to open debugger connection.",
                            name);
-                    continue;
+		    exit(1);
                 }
-            
+		else
                 rp_log(RP_VAL_LOGLEVEL_NOTICE,
                        "%s: waiting on TCP port %d",
                        name,
                        port);
-            
-                if (!(ret = dbg_sock_accept()))
-                {
-                    rp_log(RP_VAL_LOGLEVEL_ERR,
-                           "%s: error while waiting for debugger connection. Will restart.",
-                           name);
-                    dbg_sock_close();
-                    continue;
-                }
-                rp_log(RP_VAL_LOGLEVEL_NOTICE,
-                       "%s: connected",
-                       name);
-                break;
-            }
-            do_connect = TRUE;
+
+    for (;;)
+    {
+        if (input_error)
+        {
+            input_error = FALSE;
+            /* We come here when an input error is discovered */
+            rp_log(RP_VAL_LOGLEVEL_INFO,
+                   "%s: debugger has terminated connection",
+                   name);
+        
+            // t->close();
+            dbg_sock_close();
+
+            /* Close connection and start again */
+            rp_log(RP_VAL_LOGLEVEL_INFO, "%s: will reopen the connection", name);
+            do_reinitialize = TRUE;
+        }
+
+        if (do_reinitialize)
+        {
+            do_reinitialize = FALSE;
+            /* Initialize target */
+            optind = sav_optind; /* Reset arg counting */
+        
+            extended_protocol = FALSE;
+
+	    if (!(ret = dbg_sock_accept()))
+	    {
+		rp_log(RP_VAL_LOGLEVEL_ERR,
+		       "%s: error while waiting for debugger connection. Will restart.",
+		       name);
+		dbg_sock_close();
+		do_reinitialize = TRUE;
+	    }
+	    else
+	    {
+		rp_log(RP_VAL_LOGLEVEL_NOTICE,
+		       "%s: connected",
+		       name);
+
+		do_connect = TRUE;
+	    }
         }
 
         if (do_connect)
@@ -1398,7 +1395,6 @@ int main (int argc, char **argv)
             ret = t->connect(status_string, sizeof(status_string), &can_restart);
             if (ret != RP_VAL_TARGETRET_OK)
             {
-                t->close();
                 dbg_sock_close();
                 rp_log(RP_VAL_LOGLEVEL_ERR,
                        "%s: unable to connect to target %s. Will restart.",
