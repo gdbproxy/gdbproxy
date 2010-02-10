@@ -944,22 +944,86 @@ static void handle_query_command(char * const in_buf,
 
     if (strncmp(in_buf + 1, "ThreadExtraInfo,", 16) == 0)
     {
-        rp_write_retval(RP_VAL_TARGETRET_NOSUPP, out_buf);
-        return;
+      char data_buf[RP_PARAM_DATABYTES_MAX];
+      const char *in;
+
+      if (t->threadextrainfo_query == NULL)
+	{
+	  rp_write_retval(RP_VAL_TARGETRET_NOSUPP, out_buf);
+	  return;
+	}
+
+      in = &in_buf[17];
+      if (!(ret = rp_decode_uint64(&in, &ref.val, '\0')))
+	{
+	  rp_write_retval(RP_VAL_TARGETRET_ERR, out_buf);
+	  return;
+	}
+
+      ret = t->threadextrainfo_query (&ref, data_buf, RP_PARAM_DATABYTES_MAX);
+      switch (ret)
+	{
+	case RP_VAL_TARGETRET_OK:
+	  rp_encode_data ((unsigned char *)data_buf, strlen (data_buf),
+			  out_buf, out_buf_len);
+	  break;
+	case RP_VAL_TARGETRET_ERR:
+	case RP_VAL_TARGETRET_NOSUPP:
+	  rp_write_retval (ret, out_buf);
+	  break;
+	default:
+	  assert(0);
+	  break;
+	}
+      return;
     }
 
-    if (strncmp(in_buf + 1, "fThreadInfo:", 12) == 0)
+    if (strncmp(in_buf + 1, "fThreadInfo", 11) == 0)
     {
-        /* Get first string of thread info */
-        rp_write_retval(RP_VAL_TARGETRET_NOSUPP, out_buf);
-        return;
+      if (t->threadinfo_query == NULL)
+	{
+	  rp_write_retval (RP_VAL_TARGETRET_NOSUPP, out_buf);
+	  return;
+	}
+
+      ret = t->threadinfo_query (1, out_buf, out_buf_len);
+      switch (ret)
+	{
+	case RP_VAL_TARGETRET_OK:
+	  break;
+	case RP_VAL_TARGETRET_NOSUPP:
+	case RP_VAL_TARGETRET_ERR:
+	  rp_write_retval(ret, out_buf);
+	  break;
+	default:
+	  /* This should not happen */
+	  assert(0);
+	}
+      return;
     }
 
-    if (strncmp(in_buf + 1, "sThreadInfo:", 12) == 0)
+    if (strncmp(in_buf + 1, "sThreadInfo", 11) == 0)
     {
-        /* Get subsequent string of thread info */
-        rp_write_retval(RP_VAL_TARGETRET_NOSUPP, out_buf);
-        return;
+      if (t->threadinfo_query == NULL)
+	{
+	  rp_write_retval(RP_VAL_TARGETRET_NOSUPP, out_buf);
+	  return;
+	}
+
+      ret = t->threadinfo_query(0, out_buf, out_buf_len);
+      switch (ret)
+	{
+	case RP_VAL_TARGETRET_OK:
+	  break;
+	case RP_VAL_TARGETRET_NOSUPP:
+	case RP_VAL_TARGETRET_ERR:
+	  rp_write_retval(ret, out_buf);
+	  break;
+	default:
+	  /* This should not happen */
+	  assert(0);
+	}
+      return;
     }
 
     if (strncmp(in_buf + 1, "fProcessInfo", 12) == 0)
@@ -1228,7 +1292,8 @@ int main (int argc, char **argv)
 
     printf("\nRemote proxy for GDB, v%s, Copyright (C) 1999 Quality Quorum Inc.\n",
            VERSION);
-    printf("MSP430 adaption Copyright (C) 2002 Chris Liechti and Steve Underwood\n\n");
+    printf("MSP430 adaption Copyright (C) 2002 Chris Liechti and Steve Underwood\n");
+    printf("Blackfin adaption Copyright (C) 2008-2010 Analog Devices, Inc.\n\n");
     printf("GDBproxy comes with ABSOLUTELY NO WARRANTY; for details\n");
     printf("use `--warranty' option. This is Open Source software. You are\n");
     printf("welcome to redistribute it under certain conditions. Use the\n");
@@ -1673,7 +1738,10 @@ static int rp_putpkt(const char *buf)
     /* Bodge alert: flush any packets in the incoming buffer */
     do
         ret = rp_getpkt(in_buf, sizeof(in_buf), &dummy_len, 0);
-    while (ret != 1);
+    while (ret != 1 && ret != -1);
+
+    if (ret == -1)
+        return FALSE;
 
     for (;;)
     {

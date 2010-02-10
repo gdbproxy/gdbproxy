@@ -792,10 +792,10 @@ static int skeleton_wait_partial(int first,
         *more = TRUE;
         return RP_VAL_TARGETRET_OK;
     case RP_SKELETON_TARGET_STATE_SINGLE_STEP_COMPLETE:
-        sig = RP_SIGNAL_BREAKPOINT;
+        sig = RP_SIGNAL_TRAP;
         break;
     case RP_SKELETON_TARGET_STATE_BREAKPOINT_HIT:
-        sig = RP_SIGNAL_BREAKPOINT;
+        sig = RP_SIGNAL_TRAP;
         break;
     default:
         skeleton_status.log(RP_VAL_LOGLEVEL_DEBUG,
@@ -854,10 +854,10 @@ static int skeleton_wait(char *status_string,
         sig = RP_SIGNAL_ABORTED;
         break;
     case RP_SKELETON_TARGET_STATE_SINGLE_STEP_COMPLETE:
-        sig = RP_SIGNAL_BREAKPOINT;
+        sig = RP_SIGNAL_TRAP;
         break;
     case RP_SKELETON_TARGET_STATE_BREAKPOINT_HIT:
-        sig = RP_SIGNAL_BREAKPOINT;
+        sig = RP_SIGNAL_TRAP;
         break;
     default:
         skeleton_status.log(RP_VAL_LOGLEVEL_DEBUG,

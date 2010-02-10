@@ -13,6 +13,7 @@ END-INFO-DIR-ENTRY
 @ifinfo
 Copyright @copyright{} 1999 Quality Quorum, Inc.
 Copyright @copyright{} 2002 Chris Liechti and Steve Underwood
+Copyright @copyright{} 2008-2010 Analog Devices, Inc.
 
 Permission is granted to make and distribute verbatim copies of
 this manual provided the copyright notice and this permission notice
@@ -41,6 +42,7 @@ into another language, under the above conditions for modified versions.
 @c
 @c Copyright (C) 1999-2001 Quality Quorum, Inc.
 @c Copyright (C) 2002 Chris Liechti and Steve Underwood
+@c Copyright (C) 2008-2010 Analog Devices, Inc.
 @c 
 @c Redistribution and use in source and binary forms, with or without
 @c modification, are permitted provided that the following conditions are met:
@@ -73,8 +75,10 @@ into another language, under the above conditions for modified versions.
 @title The Remote Proxy Server for GDB
 @subtitle Version @value{VERSION}
 @sp 1
-@subtitle Oct 2002
-@author Quality Quorum, Inc. and Steve Underwood
+@subtitle Jan 2008
+@author Quality Quorum, Inc.
+@author Steve Underwood
+@author Analog Devices, Inc.
 @page
 
 @tex
@@ -85,6 +89,7 @@ into another language, under the above conditions for modified versions.
 @vskip 0pt plus 1filll
 Copyright @copyright{} 1999-2001 Quality Quorum, Inc.
 Copyright @copyright{} 2002 Chris Liechti and Steve Underwood
+Copyright @copyright{} 2008-2010 Analog Devices, Inc.
 
 Permission is granted to make and distribute verbatim copies of
 this manual provided the copyright notice and this permission notice

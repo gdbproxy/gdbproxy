@@ -37,6 +37,7 @@ int  dbg_sock_open(unsigned int *port);
 void dbg_sock_close(void);
 int  dbg_sock_accept(void);
 int  dbg_sock_readchar(int ms);
+int  dbg_listen_sock_open(unsigned int *port);
 
 /* Return values for readchar: either character
    code or one of the following*/

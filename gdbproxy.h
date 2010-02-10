@@ -275,7 +275,7 @@ struct rp_target_s
                         int *more);
 
     /* Wait for event, fill (null-terminated) status_string upon successful
-       returm, if there is not enough space for 'TAA... string' use 
+       return, if there is not enough space for 'TAA... string' use 
        'SAA' instead, status_sting_len is always > 3
       
        In this case return value RP_TARGETRET_NOSUPP means, that
@@ -334,6 +334,12 @@ struct rp_target_s
 
     int (*add_break)(int type, uint64_t addr, unsigned int length);
     int (*remove_break)(int type, uint64_t addr, unsigned int length);
+
+    /* Query thread info */
+    int (*threadinfo_query)(int first, char *out_buf, size_t out_buf_size);
+
+    /* Query thread extra info */
+    int (*threadextrainfo_query)(rp_thread_ref *thread, char *out_buf, size_t out_buf_size);
 };
 
 
@@ -361,7 +367,7 @@ struct rp_target_s
 #define RP_SIGNAL_INTERRUPT                 2
 #define RP_SIGNAL_QUIT                      3
 #define RP_SIGNAL_ILLEGAL_INSTRUCTION       4
-#define RP_SIGNAL_BREAKPOINT                5
+#define RP_SIGNAL_TRAP                      5
 #define RP_SIGNAL_ABORTED                   6
 #define RP_SIGNAL_BUS_ERROR                 7
 #define RP_SIGNAL_FLOATING_POINT_EXCEPTION  8

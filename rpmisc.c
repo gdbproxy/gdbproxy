@@ -146,7 +146,7 @@ int dbg_listen_sock_open(unsigned int *port)
     struct sockaddr_in sa;
     int tmp;
     int ret;
-    int p;
+    unsigned int p;
 
     assert(port == NULL  ||  *port < 0x10000);
 
