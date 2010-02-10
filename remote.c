@@ -1456,7 +1456,7 @@ static int remote_offsets_query(uint64_t *text,
 
 /* Target method */
 static int remote_crc_query(uint64_t addr,
-                            unsigned int len,
+                            size_t len,
                             uint32_t *val)
 {
     char in_buf[RP_PARAM_INOUTBUF_SIZE];
