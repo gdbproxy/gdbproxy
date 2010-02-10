@@ -254,6 +254,11 @@ static int rp_rcmd_help(int argc,
 			out_func of,
 			data_func df,
 			rp_target *t);
+static int rp_rcmd_set(int argc,
+		       char *argv[],
+		       out_func of,
+		       data_func df,
+		       rp_target *t);
 
 /* Remote command */
 #define RP_RCMD(name, hlp) {#name, rp_rcmd_##name, hlp}
@@ -2891,8 +2896,8 @@ static void rp_write_retval(int ret, char *b)
 /* Table of commands */
 static const RP_RCMD_TABLE rp_remote_commands[] =
 {
-    RP_RCMD(help,      "This help text"),
-
+    RP_RCMD(help, "This help text"),
+    RP_RCMD(set, "Set debug level"),
     {0,0,0}     //sentinel, end of table marker
 };
 
@@ -2927,6 +2932,39 @@ static int rp_rcmd_help(int argc, char *argv[], out_func of, data_func df, rp_ta
 	  of(buf);
       }
     return RP_VAL_TARGETRET_OK;
+}
+
+/* Set function, set debug level */
+static int rp_rcmd_set(int argc, char *argv[], out_func of, data_func df, rp_target *t)
+{
+  char buf[1000 + 1];
+  char buf2[1000 + 1];
+
+  if (strcmp ("debug", argv[1]) != 0)
+    {
+      sprintf (buf2, "Undefined set command: \"%s\"\n", argv[1]);
+      rp_encode_string(buf2, buf, 1000);
+      of(buf);
+      return RP_VAL_TARGETRET_OK;
+    }
+
+  if (strcmp ("0", argv[2]) == 0)
+    rp_debug_level = 0;
+  else if (strcmp ("1", argv[2]) == 0)
+    rp_debug_level = 1;
+  else if (strcmp ("2", argv[2]) == 0)
+    rp_debug_level = 2;
+  else if (strcmp ("3", argv[2]) == 0)
+    rp_debug_level = 3;
+  else
+    {
+      sprintf (buf2, "Invalid debug level: \"%s\"\n", argv[2]);
+      rp_encode_string(buf2, buf, 1000);
+      of(buf);
+      return RP_VAL_TARGETRET_OK;
+    }
+
+  return RP_VAL_TARGETRET_OK;
 }
 
 #ifdef NDEBUG
