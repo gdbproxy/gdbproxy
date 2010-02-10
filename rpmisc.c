@@ -230,7 +230,6 @@ int dbg_listen_sock_open(unsigned int *port)
 /* Accept incoming connection and set mode expected by gdb */
 int dbg_sock_accept(void)
 {
-    int ret;
     socklen_t tmp;
     struct sockaddr_in sa;
     struct protoent *pe;
