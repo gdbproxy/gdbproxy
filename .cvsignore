@@ -30,6 +30,7 @@ Makefile.in
 mdate-sh
 missing
 mkinstalldirs
+stamp-h.in
 stamp-h1
 stamp-vti
 texinfo.tex
