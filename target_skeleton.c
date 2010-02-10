@@ -163,24 +163,14 @@ static int   skeleton_crc_query(uint64_t addr,
 static int   skeleton_raw_query(char *in_buf,
                                 char *out_buf,
                                 size_t out_buf_size);
-static int   skeleton_remcmd(char *in_buf, out_func of, data_func df);
 static int   skeleton_add_break(int type, uint64_t addr, unsigned int len);
 static int   skeleton_remove_break(int type, uint64_t addr, unsigned int len);
-
-//Table of remote commands following
-static int skeleton_rcmd_help(int argc, char *argv[], out_func of, data_func df);  //proto for table entry
 
 static uint32_t crc32(uint8_t *buf, size_t len, uint32_t crc);
 
 #define RCMD(name, hlp) {#name, skeleton_rcmd_##name, hlp}  //table entry generation
 
-//Table entry definition
-typedef struct
-{
-    const char *name;                                   // command name
-    int (*function)(int, char**, out_func, data_func);  // function to call
-    const char *help;                                   // one line of help text
-} RCMD_TABLE;
+static const RCMD_TABLE skeleton_remote_commands[];
 
 /*
  * Global target descriptor 
@@ -190,6 +180,7 @@ rp_target skeleton_target =
     NULL,      /* next */
     "skeleton",
     "skeleton target to demonstrate the GDB proxy server",
+    skeleton_remote_commands,
     skeleton_help,
     skeleton_open,
     skeleton_close,
@@ -218,7 +209,6 @@ rp_target skeleton_target =
     skeleton_offsets_query,
     skeleton_crc_query,
     skeleton_raw_query,
-    skeleton_remcmd,
     skeleton_add_break,
     skeleton_remove_break
 };
@@ -252,20 +242,6 @@ static char *skeleton_out_treg(char *in, unsigned int reg_no);
 static int refresh_registers(void);
 
 /* Target method */
-
-#ifdef NDEBUG
-#define DEBUG_OUT(...)
-#else
-static void DEBUG_OUT(const char *string,...)
-{
-    va_list args;
-    va_start (args, string);
-    fprintf (stderr, "debug: ");
-    vfprintf (stderr, string, args);
-    fprintf (stderr, "\n");
-    va_end (args);
-}
-#endif
 
 static void skeleton_help(const char *prog_name)
 {
@@ -983,23 +959,6 @@ static int skeleton_raw_query(char *in_buf, char *out_buf, size_t out_buf_size)
     return RP_VAL_TARGETRET_NOSUPP;
 }
 
-static int tohex(char *s, const char *t)
-{
-    int i;
-    static char hex[] = "0123456789abcdef";
-
-    i = 0;
-    while (*t)
-    {
-        *s++ = hex[(*t >> 4) & 0x0f];
-        *s++ = hex[*t & 0x0f];
-        t++;
-        i++;
-    }
-    *s = '\0';
-    return i;
-}
-
 /* command: erase flash */
 static int skeleton_rcmd_erase(int argc, char *argv[], out_func of, data_func df)
 {
@@ -1008,146 +967,22 @@ static int skeleton_rcmd_erase(int argc, char *argv[], out_func of, data_func df
     skeleton_status.log(RP_VAL_LOGLEVEL_DEBUG,
                         "%s: skeleton_rcmd_erase()",
                         skeleton_target.name);
-    tohex(buf, "Erasing target flash - ");
+    rp_encode_string("Erasing target flash - ", buf, 1000);
     of(buf);
 
     /* TODO: perform the erase. */
 
-    tohex(buf, " Erased OK\n");
+    rp_encode_string(" Erased OK\n", buf, 1000);
     of(buf);
     return RP_VAL_TARGETRET_OK;
 }
 
 /* Table of commands */
-static const RCMD_TABLE remote_commands[] =
+static const RCMD_TABLE skeleton_remote_commands[] =
 {
-    RCMD(help,      "This help text"),
-
     RCMD(erase,     "Erase target flash memory"),
     {0,0,0}     //sentinel, end of table marker
 };
-
-/* Help function, generate help text from command table */
-static int skeleton_rcmd_help(int argc, char *argv[], out_func of, data_func df)
-{
-    char buf[1000 + 1];
-    char buf2[1000 + 1];
-    int i = 0;
-
-    tohex(buf, "Remote command help:\n");
-    of(buf);
-    for (i = 0;  remote_commands[i].name;  i++)
-    {
-#ifdef WIN32
-        sprintf(buf2, "%-10s %s\n", remote_commands[i].name, remote_commands[i].help);
-#else
-        snprintf(buf2, 1000, "%-10s %s\n", remote_commands[i].name, remote_commands[i].help);
-#endif
-        tohex(buf, buf2);
-        of(buf);
-    }
-    return RP_VAL_TARGETRET_OK;
-}
-
-/* Decode nibble */
-static int remote_decode_nibble(const char *in, unsigned int *nibble)
-{
-    unsigned int nib;
-
-    if ((nib = rp_hex_nibble(*in)) >= 0)
-    {
-        *nibble = nib;
-        return  TRUE;
-    }
-
-    return  FALSE;
-}
-
-
-/* Decode byte */
-static int remote_decode_byte(const char *in, unsigned int *byte)
-{
-    unsigned int ls_nibble;
-    unsigned int ms_nibble;
-
-    if (!remote_decode_nibble(in, &ms_nibble))
-        return  FALSE;
-
-    if (!remote_decode_nibble(in + 1, &ls_nibble))
-        return  FALSE;
-
-    *byte = (ms_nibble << 4) + ls_nibble;
-
-    return  TRUE;
-}
-
-
-/* Target method */
-#define MAXARGS 4
-static int skeleton_remcmd(char *in_buf, out_func of, data_func df)
-{
-    int count = 0;
-    int i;
-    char *args[MAXARGS];
-    char *ptr;
-    unsigned int ch;
-    char buf[1000 + 1];
-    char *s;
-
-    skeleton_status.log(RP_VAL_LOGLEVEL_DEBUG,
-                        "%s: skeleton_remcmd()",
-                        skeleton_target.name);
-    DEBUG_OUT("command '%s'", in_buf);
-
-    if (strlen(in_buf))
-    {
-        /* There is something to process */
-        /* TODO: Handle target specific commands, such as flash erase, JTAG
-                 control, etc. */
-        /* A single example "flash erase" command is partially implemented
-           here as an example. */
-        
-        /* Turn the hex into ASCII */
-        ptr = in_buf;
-        s = buf;
-        while (*ptr)
-        {
-            if (remote_decode_byte(ptr, &ch) == 0)
-                return RP_VAL_TARGETRET_ERR;
-            *s++ = ch;
-            ptr += 2;
-        }
-        *s = '\0';
-        DEBUG_OUT("command '%s'", buf);
-        
-        /* Split string into separate arguments */
-        ptr = buf;
-        args[count++] = ptr;
-        while (*ptr)
-        {
-            /* Search to the end of the string */
-            if (*ptr == ' ')
-            {
-                /* Space is the delimiter */
-                *ptr = 0;
-                if (count >= MAXARGS)
-                    return RP_VAL_TARGETRET_ERR;
-                args[count++] = ptr + 1;
-            }
-            ptr++;
-        }
-        /* Search the command table, and execute the function if found */
-        DEBUG_OUT("executing target dependant command '%s'", args[0]);
-
-        for (i = 0;  remote_commands[i].name;  i++)
-        {
-            if (strcmp(args[0], remote_commands[i].name) == 0)
-                return remote_commands[i].function(count, args, of, df);
-        }
-        return RP_VAL_TARGETRET_NOSUPP;
-    }
-    return RP_VAL_TARGETRET_ERR;
-}
 
 
 /* Target method */

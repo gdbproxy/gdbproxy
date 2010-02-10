@@ -71,6 +71,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <unistd.h>
+#include <stdarg.h>
 
 #ifdef  HAVE_GETOPT_LONG_ONLY
 #ifndef HAVE_GETOPT_H
@@ -244,6 +245,29 @@ static void handle_breakpoint_command(char * const in_buf,
                                       char *out_buf,
                                       int out_buf_len,
                                       rp_target *t);
+static int handle_rcmd_command(char *in_buf,
+			       out_func of,
+			       data_func df,
+			       rp_target *t);
+static int rp_rcmd_help(int argc,
+			char *argv[],
+			out_func of,
+			data_func df,
+			rp_target *t);
+
+/* Remote command */
+#define RP_RCMD(name, hlp) {#name, rp_rcmd_##name, hlp}
+
+/* Table entry definition */
+typedef struct
+{
+  /* command name */
+  const char *name;
+  /* command function */
+  int (*function) (int, char **, out_func, data_func, rp_target *);
+  /* one line of help text */
+  const char *help;
+} RP_RCMD_TABLE;
 
 static void handle_search_memory_command(char * const in_buf,
                                          int in_len,
@@ -1044,9 +1068,10 @@ static void handle_query_command(char * const in_buf,
     {
         /* Remote command */
         rp_target_out_valid = TRUE;
-        ret = t->remcmd(&in_buf[6],
-                        rp_console_output,
-                        rp_data_output);
+        ret = handle_rcmd_command(&in_buf[6],
+				  rp_console_output,
+				  rp_data_output,
+				  t);
         rp_target_out_valid = FALSE;
         rp_write_retval(ret, out_buf);
         return;
@@ -2407,6 +2432,34 @@ static int rp_encode_data(const unsigned char *data,
     return  TRUE;
 }
 
+/* Encode string into an array of characters */
+int rp_encode_string(const char *s, char *out, size_t out_size)
+{
+    int i;
+    static const char hex[] = "0123456789abcdef";
+
+    assert(s != NULL);
+    assert(out != NULL);
+    assert(out_size > 0);
+
+    if (strlen (s) * 2 >= out_size)
+    {
+        /* We do not have enough space to encode the data */
+        return  FALSE;
+    }
+
+    i = 0;
+    while (*s)
+    {
+        *out++ = hex[(*s >> 4) & 0x0f];
+        *out++ = hex[*s & 0x0f];
+        s++;
+        i++;
+    }
+    *out = '\0';
+    return i;
+}
+
 /* Encode result of process query:
    qQMMMMMMMMRRRRRRRRRRRRRRRR(TTTTTTTTLLVV..V)*,
    where 
@@ -2834,3 +2887,135 @@ static void rp_write_retval(int ret, char *b)
         break;
     }
 }
+
+/* Table of commands */
+static const RP_RCMD_TABLE rp_remote_commands[] =
+{
+    RP_RCMD(help,      "This help text"),
+
+    {0,0,0}     //sentinel, end of table marker
+};
+
+/* Help function, generate help text from command table */
+static int rp_rcmd_help(int argc, char *argv[], out_func of, data_func df, rp_target *t)
+{
+    char buf[1000 + 1];
+    char buf2[1000 + 1];
+    int i = 0;
+
+    rp_encode_string("Remote command help:\n", buf, 1000);
+    of(buf);
+    for (i = 0;  rp_remote_commands[i].name;  i++)
+    {
+#ifdef WIN32
+        sprintf(buf2, "%-10s %s\n", rp_remote_commands[i].name, rp_remote_commands[i].help);
+#else
+        snprintf(buf2, 1000, "%-10s %s\n", rp_remote_commands[i].name, rp_remote_commands[i].help);
+#endif
+        rp_encode_string(buf2, buf, 1000);
+        of(buf);
+    }
+    if (t->remote_commands)
+      for (i = 0;  t->remote_commands[i].name;  i++)
+      {
+#ifdef WIN32
+	  sprintf(buf2, "%-10s %s\n", t->remote_commands[i].name, t->remote_commands[i].help);
+#else
+	  snprintf(buf2, 1000, "%-10s %s\n", t->remote_commands[i].name, t->remote_commands[i].help);
+#endif
+	  rp_encode_string(buf2, buf, 1000);
+	  of(buf);
+      }
+    return RP_VAL_TARGETRET_OK;
+}
+
+#ifdef NDEBUG
+#define DEBUG_OUT(...)
+#else
+static void DEBUG_OUT(const char *string,...)
+{
+    va_list args;
+    va_start (args, string);
+    fprintf (stderr, "debug: ");
+    vfprintf (stderr, string, args);
+    fprintf (stderr, "\n");
+    va_end (args);
+}
+#endif
+
+/* Target method */
+#define MAXARGS 4
+static int handle_rcmd_command(char *in_buf, out_func of, data_func df, rp_target *t)
+{
+    int count = 0;
+    int i;
+    char *args[MAXARGS];
+    char *ptr;
+    unsigned int ch;
+    char buf[1000 + 1];
+    char *s;
+
+    rp_log(RP_VAL_LOGLEVEL_DEBUG,
+	   "%s: handle_rcmd_command()",
+	   name);
+    DEBUG_OUT("command '%s'", in_buf);
+
+    if (strlen(in_buf))
+    {
+        /* There is something to process */
+        /* TODO: Handle target specific commands, such as flash erase, JTAG
+                 control, etc. */
+        /* A single example "flash erase" command is partially implemented
+           here as an example. */
+        
+        /* Turn the hex into ASCII */
+        ptr = in_buf;
+        s = buf;
+        while (*ptr)
+        {
+            if (rp_decode_byte(ptr, &ch) == 0)
+                return RP_VAL_TARGETRET_ERR;
+            *s++ = ch;
+            ptr += 2;
+        }
+        *s = '\0';
+        DEBUG_OUT("command '%s'", buf);
+        
+        /* Split string into separate arguments */
+        ptr = buf;
+        args[count++] = ptr;
+        while (*ptr)
+        {
+            /* Search to the end of the string */
+            if (*ptr == ' ')
+            {
+                /* Space is the delimiter */
+                *ptr = 0;
+                if (count >= MAXARGS)
+                    return RP_VAL_TARGETRET_ERR;
+                args[count++] = ptr + 1;
+            }
+            ptr++;
+        }
+        /* Search the command table, and execute the function if found */
+        DEBUG_OUT("executing target dependant command '%s'", args[0]);
+
+	/* Search the target command table first, such that we allow target
+	   to override the general command.  */
+	if (t->remote_commands)
+            for (i = 0;  t->remote_commands[i].name;  i++)
+            {
+                if (strcmp(args[0], t->remote_commands[i].name) == 0)
+		    return t->remote_commands[i].function(count, args, of, df);
+	    }
+
+        for (i = 0;  rp_remote_commands[i].name;  i++)
+        {
+            if (strcmp(args[0], rp_remote_commands[i].name) == 0)
+	        return rp_remote_commands[i].function(count, args, of, df, t);
+        }
+        return RP_VAL_TARGETRET_NOSUPP;
+    }
+    return RP_VAL_TARGETRET_ERR;
+}
+

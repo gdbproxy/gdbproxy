@@ -114,6 +114,17 @@ typedef void (*log_func)(int level, const char *string, ...);
 /* Target, all functions return boolen values */
 typedef struct rp_target_s rp_target;
 
+/* Table entry definition */
+typedef struct
+{
+  /* command name */
+  const char *name;
+  /* command function */
+  int (*function) (int, char **, out_func, data_func);
+  /* one line of help text */
+  const char *help;
+} RCMD_TABLE;
+
 struct rp_target_s
 {
     rp_target *next;
@@ -121,6 +132,9 @@ struct rp_target_s
     const char *name; /* Unique ASCII name of the target */
 
     const char *desc; /* Short description */
+
+    /* Table of remote commands */
+    const RCMD_TABLE *remote_commands;
 
     /*======================   Help/Debug  =======================*/
 
@@ -327,9 +341,6 @@ struct rp_target_s
        the nearest future.  */
     int (*raw_query)(char *in_buf, char *out_buf, size_t out_buf_size);
 
-    /* Remote command */
-    int (*remcmd)(char *in_buf, out_func of, data_func df);
-
     /*============ Breakpoints ===========================*/
 
     int (*add_break)(int type, uint64_t addr, unsigned int length);
@@ -409,5 +420,6 @@ void rp_show_copying(void);
 void rp_show_warranty(void);
 
 int rp_hex_nibble(char in);
+int rp_encode_string(const char *s, char *out, size_t out_size);
 
 #endif /* _PROXY_H_ */

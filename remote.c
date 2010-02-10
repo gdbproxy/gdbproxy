@@ -161,6 +161,7 @@ rp_target remote_target =
     NULL,      /* next */
     "remote",
     "proxy target implementing gdb serial protocol",
+    NULL,
     remote_help,
     remote_open,
     remote_close,
@@ -189,7 +190,6 @@ rp_target remote_target =
     remote_offsets_query,
     remote_crc_query,
     remote_raw_query,
-    remote_remcmd,
     remote_add_break,
     remote_remove_break
 };
@@ -202,6 +202,7 @@ rp_target extended_remote_target =
     NULL,      /* next */
     "extended-remote",
     "proxy target implementing extended gdb serial protocol",
+    NULL,
     extended_remote_help,
     remote_open,
     remote_close,
@@ -230,7 +231,6 @@ rp_target extended_remote_target =
     remote_offsets_query,
     remote_crc_query,
     remote_raw_query,
-    remote_remcmd,
     remote_add_break,
     remote_remove_break
 };

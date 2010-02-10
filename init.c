@@ -223,9 +223,6 @@ static int rp_init_check_target(rp_target *t)
     if (t->raw_query == NULL)
         return  FALSE;
 
-    if (t->remcmd == NULL)
-        return  FALSE;
-
     if (t->add_break == NULL)
         return  FALSE;
 
